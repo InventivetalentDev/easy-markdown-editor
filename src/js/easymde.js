@@ -395,7 +395,7 @@ function toggleItalic(editor) {
  * Action for toggling strikethrough.
  */
 function toggleStrikethrough(editor) {
-    _toggleBlock(editor, 'strikethrough', '~~');
+    _toggleBlock(editor, 'strikethrough', editor.options.blockStyles.strikethrough);
 }
 
 /**
@@ -1224,15 +1224,9 @@ function _toggleBlock(editor, type, start_chars, end_chars) {
         text = cm.getLine(startPoint.line);
         start = text.slice(0, startPoint.ch);
         end = text.slice(startPoint.ch);
-        if (type == 'bold') {
-            start = start.replace(/(\*\*|__)(?![\s\S]*(\*\*|__))/, '');
-            end = end.replace(/(\*\*|__)/, '');
-        } else if (type == 'italic') {
-            start = start.replace(/(\*|_)(?![\s\S]*(\*|_))/, '');
-            end = end.replace(/(\*|_)/, '');
-        } else if (type == 'strikethrough') {
-            start = start.replace(/(\*\*|~~)(?![\s\S]*(\*\*|~~))/, '');
-            end = end.replace(/(\*\*|~~)/, '');
+        if (type == 'bold' || type == 'italic' || type == 'strikethrough') {
+            start = start.replace(editor.options.blockStylesRegex[type].start, '');
+            end = end.replace(editor.options.blockStylesRegex[type].end, '');
         }
         cm.replaceRange(start + end, {
             line: startPoint.line,
@@ -1242,27 +1236,16 @@ function _toggleBlock(editor, type, start_chars, end_chars) {
             ch: 99999999999999,
         });
 
-        if (type == 'bold' || type == 'strikethrough') {
-            startPoint.ch -= 2;
+        if (type == 'bold' || type == 'strikethrough' || type == 'italic') {
+            startPoint.ch -= start_chars.length;
             if (startPoint !== endPoint) {
-                endPoint.ch -= 2;
-            }
-        } else if (type == 'italic') {
-            startPoint.ch -= 1;
-            if (startPoint !== endPoint) {
-                endPoint.ch -= 1;
+                endPoint.ch -= start_chars.length;
             }
         }
     } else {
         text = cm.getSelection();
-        if (type == 'bold') {
-            text = text.split('**').join('');
-            text = text.split('__').join('');
-        } else if (type == 'italic') {
-            text = text.split('*').join('');
-            text = text.split('_').join('');
-        } else if (type == 'strikethrough') {
-            text = text.split('~~').join('');
+        if (type == 'bold' || type == 'strikethrough' || type == 'italic') {
+            text = text.split(start_chars).join('');
         }
         cm.replaceSelection(start + text + end);
 
@@ -1576,6 +1559,22 @@ var blockStyles = {
     'bold': '**',
     'code': '```',
     'italic': '*',
+    'strikethrough': '~~'
+};
+
+var blockStylesRegex = {
+    'bold': {
+        start: /(\*\*|__)(?![\s\S]*(\*\*|__))/,
+        end: /(\*\*|__)/
+    },
+    'italic': {
+        start: /(\*|_)(?![\s\S]*(\*|_))/,
+        end: /(\*|_)/
+    },
+    'strikethrough': {
+        start: /(\*\*|~~)(?![\s\S]*(\*\*|~~))/,
+        end: /(\*\*|~~)/
+    }
 };
 
 /**
@@ -1710,6 +1709,8 @@ function EasyMDE(options) {
 
     // Merging the blockStyles, with the given options
     options.blockStyles = extend({}, blockStyles, options.blockStyles || {});
+
+    options.blockStylesRegex = extend({}, blockStylesRegex, options.blockStylesRegex || {});
 
 
     if (options.autosave != undefined) {
@@ -2142,7 +2143,7 @@ EasyMDE.prototype.render = function (el) {
                         assignImageBlockAttributes(parentEl, window.EMDEimagesCache[keySrc]);
                     }
                 }
-            } 
+            }
         });
     }
     this.codemirror.on('update', function () {
