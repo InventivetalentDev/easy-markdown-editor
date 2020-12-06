@@ -1559,22 +1559,22 @@ var blockStyles = {
     'bold': '**',
     'code': '```',
     'italic': '*',
-    'strikethrough': '~~'
+    'strikethrough': '~~',
 };
 
 var blockStylesRegex = {
     'bold': {
         start: /(\*\*|__)(?![\s\S]*(\*\*|__))/,
-        end: /(\*\*|__)/
+        end: /(\*\*|__)/,
     },
     'italic': {
         start: /(\*|_)(?![\s\S]*(\*|_))/,
-        end: /(\*|_)/
+        end: /(\*|_)/,
     },
     'strikethrough': {
         start: /(\*\*|~~)(?![\s\S]*(\*\*|~~))/,
-        end: /(\*\*|~~)/
-    }
+        end: /(\*\*|~~)/,
+    },
 };
 
 /**
